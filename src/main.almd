@@ -1,0 +1,23 @@
+// CLI エントリポイント (native) — TSV スキーマと行検証の目視確認。
+import self as ds
+import json
+import value
+
+effect fn main() -> Unit = {
+  let header = "拾ったコメント\tラムネの回答\tユーザー名\tタイムスタンプ\tカテゴリ\t備考"
+  let good = "今日の新衣装\t[happy] わ、ありがとう。\t田中太郎\t15:30\t感想\t"
+  let short = "コメントだけ\t返答"
+  println(json.stringify(value.object([
+    ("column_count", value.int(ds.column_count())),
+    ("col_name_0", value.str(ds.column_name(0))),
+    ("col_name_5", value.str(ds.column_name(5))),
+    ("col_name_oob", value.str(ds.column_name(9))),
+    ("header_fields", value.int(ds.field_count(header))),
+    ("header_is_header", value.bool(ds.is_header(header))),
+    ("header_valid_row", value.bool(ds.is_valid_row(header))),
+    ("good_fields", value.int(ds.field_count(good))),
+    ("good_valid_row", value.bool(ds.is_valid_row(good))),
+    ("short_valid_row", value.bool(ds.is_valid_row(short))),
+    ("blank_valid_row", value.bool(ds.is_valid_row("   "))),
+  ])))
+}

@@ -1,0 +1,4 @@
+[package]
+name = "fizz_eval_dataset"
+version = "0.1.0"
+description = "Fizz eval dataset — comment/reply eval-set TSV schema (6 cols: comment/reply/user/timestamp/category/note) + row validation. One Almide core, native + wasm."

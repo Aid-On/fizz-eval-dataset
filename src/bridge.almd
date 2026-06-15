@@ -1,0 +1,66 @@
+// wasm — eval-set ローダ / データセット検証 UI から呼ぶ。
+//   行文字列は in_alloc バッファ + コピー経由で渡す(almide#690 回避)。検証は Bool→Float。
+//   列名の文字列出力は out_ptr で読む(呼ぶたびに 1 回読む運用)。
+import self as ds
+import bytes
+import float
+import int
+import list
+import string
+
+var g_in: Bytes = bytes.new(0)
+var g_out: Bytes = bytes.new(0)
+
+@export(wasm, "in_alloc")
+fn in_alloc(len: Float) -> RawPtr = {
+  g_in = bytes.new(float.to_int(len))
+  bytes.as_mut_ptr(g_in)
+}
+
+@export(wasm, "out_ptr")
+fn out_ptr() -> RawPtr = bytes.as_mut_ptr(g_out)
+
+@export(wasm, "column_count")
+fn w_column_count() -> Float = int.to_float(ds.column_count())
+
+@export(wasm, "col_comment")
+fn w_col_comment() -> Float = int.to_float(ds.col_comment())
+
+@export(wasm, "col_reply")
+fn w_col_reply() -> Float = int.to_float(ds.col_reply())
+
+// 列 index → 列名を g_out に書き長さを返す(out_ptr で読む)。
+@export(wasm, "column_name_resolve")
+fn w_column_name(idx: Float) -> Float = {
+  let s = ds.column_name(float.to_int(idx))
+  g_out = bytes.from_string(s)
+  int.to_float(list.len(string.to_bytes(s)))
+}
+
+// g_in に書かれた行を独立バッファへコピーしてから文字列化(almide#690 回避)。
+fn line() -> String = bytes.to_string_lossy(bytes.from_list(bytes.to_list(g_in)))
+
+@export(wasm, "field_count")
+fn w_field_count() -> Float = int.to_float(ds.field_count(line()))
+
+@export(wasm, "has_valid_columns")
+fn w_has_valid_columns() -> Float = if ds.has_valid_columns(line()) then 1.0 else 0.0
+
+@export(wasm, "is_header")
+fn w_is_header() -> Float = if ds.is_header(line()) then 1.0 else 0.0
+
+@export(wasm, "is_blank")
+fn w_is_blank() -> Float = if ds.is_blank(line()) then 1.0 else 0.0
+
+@export(wasm, "is_valid_row")
+fn w_is_valid_row() -> Float = if ds.is_valid_row(line()) then 1.0 else 0.0
+
+effect fn main() -> Unit = {
+  let _a = in_alloc(1.0)
+  let _b = w_column_count()
+  let _c = w_column_name(0.0)
+  let _d = w_field_count()
+  let _e = w_is_valid_row()
+  let _f = out_ptr()
+  ()
+}

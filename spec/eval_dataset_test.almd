@@ -1,0 +1,50 @@
+import self as ds
+
+test "スキーマ: 列数と列名" {
+  assert_eq(ds.column_count(), 6)
+  assert_eq(ds.column_name(0), "comment")
+  assert_eq(ds.column_name(1), "reply")
+  assert_eq(ds.column_name(2), "user")
+  assert_eq(ds.column_name(3), "timestamp")
+  assert_eq(ds.column_name(4), "category")
+  assert_eq(ds.column_name(5), "note")
+  assert_eq(ds.column_name(6), "")
+  assert_eq(ds.col_comment(), 0)
+  assert_eq(ds.col_reply(), 1)
+}
+
+test "field_count: タブ数 + 1" {
+  assert_eq(ds.field_count("a\tb\tc"), 3)
+  assert_eq(ds.field_count("single"), 1)
+  assert_eq(ds.field_count("a\tb\tc\td\te\tf"), 6)
+}
+
+test "has_valid_columns: 6 列か" {
+  assert_eq(ds.has_valid_columns("a\tb\tc\td\te\tf"), true)
+  assert_eq(ds.has_valid_columns("a\tb"), false)
+  assert_eq(ds.has_valid_columns("a\tb\tc\td\te\tf\tg"), false)
+}
+
+test "is_header" {
+  assert_eq(ds.is_header("拾ったコメント\tラムネの回答\tユーザー名\tタイムスタンプ\tカテゴリ\t備考"), true)
+  assert_eq(ds.is_header("今日の天気\t晴れ\t太郎\t10:00\t雑談\t"), false)
+}
+
+test "is_blank" {
+  assert_eq(ds.is_blank(""), true)
+  assert_eq(ds.is_blank("   "), true)
+  assert_eq(ds.is_blank("x"), false)
+}
+
+test "is_valid_row: データ行判定" {
+  // 正しい 6 列データ行
+  assert_eq(ds.is_valid_row("今日の新衣装\t[happy] ありがとう\t田中太郎\t15:30\t感想\t"), true)
+  // ヘッダは無効
+  assert_eq(ds.is_valid_row("拾ったコメント\tラムネの回答\tユーザー名\tタイムスタンプ\tカテゴリ\t備考"), false)
+  // 列不足は無効
+  assert_eq(ds.is_valid_row("コメント\t返答"), false)
+  // 空行は無効
+  assert_eq(ds.is_valid_row("   "), false)
+  // 先頭フィールド(コメント)が空は無効
+  assert_eq(ds.is_valid_row("\t返答\tユーザー\t10:00\t雑談\t"), false)
+}

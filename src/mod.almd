@@ -1,0 +1,44 @@
+// fizz_eval_dataset — コメント/返答評価セット(TSV)のスキーマ + 行検証(§12 eval-dataset)。
+//
+// 責務 (一行): 評価セット TSV のスキーマ(タブ区切り 6 列: コメント / 返答 / ユーザー名 /
+// タイムスタンプ / カテゴリ / 備考)を定義し、1 行が正しい形のデータ行かを検証する。
+//
+// TSV ファイルの読み込み・行分割・フィールド切り出しは Node の I/O(line.split("\t"))、
+// 「何列か・各列は何か・この行は有効か」というスキーマ契約は純粋なので Almide に集約
+// =単一の正本。
+// 移植元: openaituber eval/ramune-fullset.tsv(タブ区切り 6 列 + ヘッダ行)。
+
+import string
+
+// 評価セットの列数。
+fn column_count() -> Int = 6
+
+// 列 index(0-based)→ 列名。範囲外は ""。
+fn column_name(idx: Int) -> String = match idx {
+  0 => "comment", 1 => "reply", 2 => "user",
+  3 => "timestamp", 4 => "category", 5 => "note", _ => "",
+}
+
+// 主要 2 列の index(コメント/返答ペアがコア)。
+fn col_comment() -> Int = 0
+fn col_reply() -> Int = 1
+
+// 行のフィールド数(タブ数 + 1)。
+fn field_count(line: String) -> Int = string.count(line, "\t") + 1
+
+// 行が正しい列数か(6 フィールド)。
+fn has_valid_columns(line: String) -> Bool = field_count(line) == column_count()
+
+// 行がヘッダか(先頭フィールドが "拾ったコメント")。
+fn is_header(line: String) -> Bool = string.starts_with(line, "拾ったコメント\t")
+
+// 空行・空白のみ行か。
+fn is_blank(line: String) -> Bool = string.trim(line) == ""
+
+// データ行として有効か:
+//   列数が 6 / ヘッダでない / 空行でない / 先頭フィールド(コメント)が空でない。
+fn is_valid_row(line: String) -> Bool =
+  has_valid_columns(line)
+  and (not is_header(line))
+  and (not is_blank(line))
+  and (not string.starts_with(line, "\t"))
