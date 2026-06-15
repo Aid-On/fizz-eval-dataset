@@ -1,23 +1,25 @@
-// CLI エントリポイント (native) — TSV スキーマと行検証の目視確認。
+// CLI エントリポイント (native) — TSV スキーマ + 行分類の目視確認。
 import self as ds
 import json
 import value
 
 effect fn main() -> Unit = {
   let header = "拾ったコメント\tラムネの回答\tユーザー名\tタイムスタンプ\tカテゴリ\t備考"
-  let good = "今日の新衣装\t[happy] わ、ありがとう。\t田中太郎\t15:30\t感想\t"
-  let short = "コメントだけ\t返答"
+  let example = "今日の新衣装\t[happy] わ、ありがとう。\t田中太郎\t15:30\t感想\t"
+  let monologue = "\t[relaxed] ねえ、ちょっと真面目な話していい?\t\t\t雑談\t"
+  let no_reply = "コメントだけある\t\t太郎\t10:00\t雑談\t"
   println(json.stringify(value.object([
     ("column_count", value.int(ds.column_count())),
     ("col_name_0", value.str(ds.column_name(0))),
     ("col_name_5", value.str(ds.column_name(5))),
-    ("col_name_oob", value.str(ds.column_name(9))),
-    ("header_fields", value.int(ds.field_count(header))),
-    ("header_is_header", value.bool(ds.is_header(header))),
-    ("header_valid_row", value.bool(ds.is_valid_row(header))),
-    ("good_fields", value.int(ds.field_count(good))),
-    ("good_valid_row", value.bool(ds.is_valid_row(good))),
-    ("short_valid_row", value.bool(ds.is_valid_row(short))),
-    ("blank_valid_row", value.bool(ds.is_valid_row("   "))),
+    ("header_kind", value.int(ds.row_kind(header))),
+    ("example_kind", value.int(ds.row_kind(example))),
+    ("monologue_kind", value.int(ds.row_kind(monologue))),
+    ("no_reply_kind", value.int(ds.row_kind(no_reply))),
+    ("example_valid", value.bool(ds.is_valid_row(example))),
+    ("monologue_valid", value.bool(ds.is_valid_row(monologue))),
+    ("no_reply_valid", value.bool(ds.is_valid_row(no_reply))),
+    ("example_comment", value.str(ds.comment_of(example))),
+    ("monologue_has_comment", value.bool(ds.has_comment(monologue))),
   ])))
 }

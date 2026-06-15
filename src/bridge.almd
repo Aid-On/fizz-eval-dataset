@@ -1,6 +1,6 @@
 // wasm — eval-set ローダ / データセット検証 UI から呼ぶ。
-//   行文字列は in_alloc バッファ + コピー経由で渡す(almide#690 回避)。検証は Bool→Float。
-//   列名の文字列出力は out_ptr で読む(呼ぶたびに 1 回読む運用)。
+//   行文字列は in_alloc バッファ + コピー経由で渡す(almide#690 回避)。分類は Int/Bool→Float。
+//   列名・フィールドの文字列出力は out_ptr で読む(呼ぶたびに 1 回読む運用)。
 import self as ds
 import bytes
 import float
@@ -29,7 +29,7 @@ fn w_col_comment() -> Float = int.to_float(ds.col_comment())
 @export(wasm, "col_reply")
 fn w_col_reply() -> Float = int.to_float(ds.col_reply())
 
-// 列 index → 列名を g_out に書き長さを返す(out_ptr で読む)。
+// 列 index → 列名を g_out に書き長さを返す。
 @export(wasm, "column_name_resolve")
 fn w_column_name(idx: Float) -> Float = {
   let s = ds.column_name(float.to_int(idx))
@@ -52,15 +52,48 @@ fn w_is_header() -> Float = if ds.is_header(line()) then 1.0 else 0.0
 @export(wasm, "is_blank")
 fn w_is_blank() -> Float = if ds.is_blank(line()) then 1.0 else 0.0
 
+@export(wasm, "has_comment")
+fn w_has_comment() -> Float = if ds.has_comment(line()) then 1.0 else 0.0
+
+@export(wasm, "has_reply")
+fn w_has_reply() -> Float = if ds.has_reply(line()) then 1.0 else 0.0
+
+@export(wasm, "is_example_row")
+fn w_is_example_row() -> Float = if ds.is_example_row(line()) then 1.0 else 0.0
+
+@export(wasm, "is_monologue_row")
+fn w_is_monologue_row() -> Float = if ds.is_monologue_row(line()) then 1.0 else 0.0
+
 @export(wasm, "is_valid_row")
 fn w_is_valid_row() -> Float = if ds.is_valid_row(line()) then 1.0 else 0.0
+
+// 行種別: 1 = example, 2 = monologue, 0 = 無効。
+@export(wasm, "row_kind")
+fn w_row_kind() -> Float = int.to_float(ds.row_kind(line()))
+
+// コメント(Q)列を g_out に書き長さを返す。
+@export(wasm, "comment_resolve")
+fn w_comment_resolve() -> Float = {
+  let s = ds.comment_of(line())
+  g_out = bytes.from_string(s)
+  int.to_float(list.len(string.to_bytes(s)))
+}
+
+// 返答(A)列を g_out に書き長さを返す。
+@export(wasm, "reply_resolve")
+fn w_reply_resolve() -> Float = {
+  let s = ds.reply_of(line())
+  g_out = bytes.from_string(s)
+  int.to_float(list.len(string.to_bytes(s)))
+}
 
 effect fn main() -> Unit = {
   let _a = in_alloc(1.0)
   let _b = w_column_count()
   let _c = w_column_name(0.0)
   let _d = w_field_count()
-  let _e = w_is_valid_row()
-  let _f = out_ptr()
+  let _e = w_row_kind()
+  let _f = w_reply_resolve()
+  let _g = out_ptr()
   ()
 }

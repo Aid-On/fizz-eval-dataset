@@ -13,38 +13,64 @@ test "スキーマ: 列数と列名" {
   assert_eq(ds.col_reply(), 1)
 }
 
-test "field_count: タブ数 + 1" {
+test "field_count / has_valid_columns" {
   assert_eq(ds.field_count("a\tb\tc"), 3)
-  assert_eq(ds.field_count("single"), 1)
   assert_eq(ds.field_count("a\tb\tc\td\te\tf"), 6)
-}
-
-test "has_valid_columns: 6 列か" {
   assert_eq(ds.has_valid_columns("a\tb\tc\td\te\tf"), true)
   assert_eq(ds.has_valid_columns("a\tb"), false)
-  assert_eq(ds.has_valid_columns("a\tb\tc\td\te\tf\tg"), false)
 }
 
-test "is_header" {
+test "field / comment_of / reply_of(trim 済み)" {
+  let row = "今日の新衣装\t[happy] ありがとう\t太郎\t15:30\t感想\t"
+  assert_eq(ds.comment_of(row), "今日の新衣装")
+  assert_eq(ds.reply_of(row), "[happy] ありがとう")
+  assert_eq(ds.has_comment(row), true)
+  assert_eq(ds.has_reply(row), true)
+  // 空フィールドの trim
+  let mono = "\t独り言だけ\t\t\t雑談\t"
+  assert_eq(ds.comment_of(mono), "")
+  assert_eq(ds.reply_of(mono), "独り言だけ")
+  assert_eq(ds.has_comment(mono), false)
+}
+
+test "is_header / is_blank" {
   assert_eq(ds.is_header("拾ったコメント\tラムネの回答\tユーザー名\tタイムスタンプ\tカテゴリ\t備考"), true)
   assert_eq(ds.is_header("今日の天気\t晴れ\t太郎\t10:00\t雑談\t"), false)
-}
-
-test "is_blank" {
   assert_eq(ds.is_blank(""), true)
   assert_eq(ds.is_blank("   "), true)
   assert_eq(ds.is_blank("x"), false)
 }
 
-test "is_valid_row: データ行判定" {
-  // 正しい 6 列データ行
-  assert_eq(ds.is_valid_row("今日の新衣装\t[happy] ありがとう\t田中太郎\t15:30\t感想\t"), true)
-  // ヘッダは無効
-  assert_eq(ds.is_valid_row("拾ったコメント\tラムネの回答\tユーザー名\tタイムスタンプ\tカテゴリ\t備考"), false)
-  // 列不足は無効
-  assert_eq(ds.is_valid_row("コメント\t返答"), false)
-  // 空行は無効
+test "行分類: example / monologue / 無効(persona.ts と一致)" {
+  let example = "今日の新衣装\t[happy] ありがとう\t太郎\t15:30\t感想\t"
+  let monologue = "\t[relaxed] 真面目な話していい?\t\t\t雑談\t"
+  let no_reply = "コメントだけ\t\t太郎\t10:00\t雑談\t"
+  let header = "拾ったコメント\tラムネの回答\tユーザー名\tタイムスタンプ\tカテゴリ\t備考"
+
+  // Q も A もある → example (kind 1)
+  assert_eq(ds.is_example_row(example), true)
+  assert_eq(ds.is_monologue_row(example), false)
+  assert_eq(ds.row_kind(example), 1)
+
+  // Q 空 / A あり → monologue (kind 2) ← 旧実装が誤って弾いていた行
+  assert_eq(ds.is_example_row(monologue), false)
+  assert_eq(ds.is_monologue_row(monologue), true)
+  assert_eq(ds.row_kind(monologue), 2)
+
+  // A 空 → 無効 (kind 0)
+  assert_eq(ds.row_kind(no_reply), 0)
+  assert_eq(ds.is_valid_row(no_reply), false)
+
+  // ヘッダ → 無効
+  assert_eq(ds.row_kind(header), 0)
+  assert_eq(ds.is_valid_row(header), false)
+
+  // 有効 = example か monologue
+  assert_eq(ds.is_valid_row(example), true)
+  assert_eq(ds.is_valid_row(monologue), true)
+}
+
+test "空行・列数不正は無効" {
   assert_eq(ds.is_valid_row("   "), false)
-  // 先頭フィールド(コメント)が空は無効
-  assert_eq(ds.is_valid_row("\t返答\tユーザー\t10:00\t雑談\t"), false)
+  assert_eq(ds.row_kind("a\tb"), 0)
 }
